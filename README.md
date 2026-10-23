@@ -30,7 +30,7 @@ pnpm install --frozen-lockfile
 pnpm start
 ```
 
-Открыть http://localhost:4200. Требуются Node.js 20.19+, 22.12+ или 24 и pnpm 11.
+Открыть http://localhost:4200. Требуются Node.js 22.12+ или 24 и pnpm 11.
 Команда `pnpm build` собирает приложение.
 
 Компоненты вызывают `LessonsService`: список, создание, изменение, удаление,
