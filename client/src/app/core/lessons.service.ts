@@ -1,81 +1,56 @@
-import { Injectable } from '@angular/core';
-import { attendanceValue, Lesson, LessonDetails, LessonQuery, Page, Statistics } from '../shared/lesson';
-import { parseSchedule } from './schedule-parser';
+import { HttpClient, HttpErrorResponse, HttpParams } from '@angular/common/http';
+import { Injectable, inject } from '@angular/core';
+import { firstValueFrom } from 'rxjs';
+import { Lesson, LessonDetails, LessonQuery, Page, Statistics } from '../shared/lesson';
 
 @Injectable({ providedIn: 'root' })
 export class LessonsService {
-  // Во второй лабе данные находятся внутри обычного сервиса.
-  // Компоненты не знают, откуда он их получает.
-  private lessons: Lesson[] = [
-    { id: 1, date: '2026-10-23', startTime: '10:00', endTime: '11:30', subject: 'Программная инженерия', teacher: 'И. А. Зорин', room: 'А-101', isAttended: true },
-    { id: 2, date: '2026-10-23', startTime: '12:00', endTime: '13:30', subject: 'Базы данных', teacher: 'О. В. Петрова', room: 'Б-203', isAttended: false },
-    { id: 3, date: '2026-10-24', startTime: '09:00', endTime: '10:30', subject: 'Английский язык', teacher: 'Е. С. Смирнова', room: 'В-305', isAttended: null },
-    { id: 4, date: '2026-10-24', startTime: '11:00', endTime: '12:30', subject: 'Математика', teacher: 'А. Н. Волков', room: 'Г-404', isAttended: null }
-  ];
-  private nextId = 5;
+  private readonly http = inject(HttpClient);
 
-  async list(query: LessonQuery): Promise<Page<Lesson>> {
-    const items = this.lessons.filter(l => (!query.date || l.date === query.date)
-      && l.subject.toLocaleLowerCase('ru').includes(query.search.trim().toLocaleLowerCase('ru'))
-      && (!query.attendance || l.isAttended === attendanceValue(query.attendance)))
-      .sort((a, b) => `${a.date} ${a.startTime}`.localeCompare(`${b.date} ${b.startTime}`) || a.id - b.id);
-    return { items: structuredClone(items.slice((query.page - 1) * 10, query.page * 10)), total: items.length, page: query.page, pageSize: 10 };
+  list(query: LessonQuery): Promise<Page<Lesson>> {
+    let params = new HttpParams().set('page', query.page).set('pageSize', 10);
+    if (query.date) params = params.set('date', query.date);
+    if (query.search.trim()) params = params.set('search', query.search.trim());
+    if (query.attendance) params = params.set('attendance', query.attendance);
+    return this.request(firstValueFrom(this.http.get<Page<Lesson>>('/api/lessons', { params })));
   }
 
-  async get(id: number): Promise<Lesson> {
-    const lesson = this.lessons.find(l => l.id === id);
-    if (!lesson) throw new Error('Занятие не найдено.');
-    return structuredClone(lesson);
+  get(id: number): Promise<Lesson> {
+    return this.request(firstValueFrom(this.http.get<Lesson>(`/api/lessons/${id}`)));
   }
 
   async save(details: LessonDetails, id?: number): Promise<void> {
-    this.validate(details);
-    if (id !== undefined) {
-      const lesson = await this.get(id);
-      this.lessons = this.lessons.map(l => l.id === id ? { ...lesson, ...details } : l);
-    } else {
-      this.lessons.push({ ...details, id: this.nextId++, isAttended: null });
-    }
+    // ISO-время API содержит секунды; поле формы хранит часы и минуты.
+    const body = { ...details, startTime: `${details.startTime}:00`, endTime: `${details.endTime}:00` };
+    if (id === undefined) await this.request(firstValueFrom(this.http.post('/api/lessons', body)));
+    else await this.request(firstValueFrom(this.http.put(`/api/lessons/${id}`, body)));
   }
 
   async mark(id: number, isAttended: boolean | null): Promise<void> {
-    await this.get(id);
-    this.lessons = this.lessons.map(l => l.id === id ? { ...l, isAttended } : l);
+    await this.request(firstValueFrom(this.http.patch(`/api/lessons/${id}/attendance`, { isAttended })));
   }
 
   async delete(id: number): Promise<void> {
-    await this.get(id);
-    this.lessons = this.lessons.filter(l => l.id !== id);
+    await this.request(firstValueFrom(this.http.delete(`/api/lessons/${id}`)));
   }
 
   async importHtml(html: string): Promise<number> {
-    const lessons = parseSchedule(html);
-    // Сначала проверяем весь файл, чтобы ошибка не оставила частичный импорт.
-    lessons.forEach(l => this.validate(l));
-    for (const details of lessons) await this.save(details);
-    return lessons.length;
+    const result = await this.request(firstValueFrom(this.http.post<{ count: number }>('/api/lessons/import', { html })));
+    return result.count;
   }
 
-  async statistics(): Promise<Statistics> {
-    const subjects = [...new Set(this.lessons.map(l => l.subject))].sort().map(subject => {
-      const items = this.lessons.filter(l => l.subject === subject);
-      const attended = items.filter(l => l.isAttended === true).length;
-      const absent = items.filter(l => l.isAttended === false).length;
-      return { subject, total: items.length, attended, absent, percentage: this.percentage(attended, absent) };
-    });
-    const attended = this.lessons.filter(l => l.isAttended === true).length;
-    const absent = this.lessons.filter(l => l.isAttended === false).length;
-    return { total: this.lessons.length, attended, absent, unmarked: this.lessons.length - attended - absent, percentage: this.percentage(attended, absent), subjects };
+  statistics(): Promise<Statistics> {
+    return this.request(firstValueFrom(this.http.get<Statistics>('/api/statistics')));
   }
 
-  private percentage(attended: number, absent: number): number {
-    return attended + absent === 0 ? 0 : Math.round(attended / (attended + absent) * 1000) / 10;
-  }
-
-  private validate(details: LessonDetails): void {
-    const date = new Date(`${details.date}T00:00:00Z`);
-    if (!/^\d{4}-\d{2}-\d{2}$/.test(details.date) || !Number.isFinite(date.getTime()) || date.toISOString().slice(0, 10) !== details.date) throw new Error('Укажите существующую дату.');
-    if (![details.startTime, details.endTime].every(t => /^([01]\d|2[0-3]):[0-5]\d$/.test(t)) || details.startTime >= details.endTime) throw new Error('Время окончания должно быть позже начала.');
-    if (!details.subject.trim() || details.subject.length > 100 || !details.teacher.trim() || details.teacher.length > 100 || !details.room.trim() || details.room.length > 30) throw new Error('Заполните предмет, преподавателя и аудиторию в пределах допустимой длины.');
+  private async request<T>(promise: Promise<T>): Promise<T> {
+    try { return await promise; }
+    catch (error) {
+      if (error instanceof HttpErrorResponse) {
+        if (error.status === 0 || error.status === 502 || error.status === 504) throw new Error('API недоступен. Проверьте, что сервер запущен на порту 5080.');
+        throw new Error(error.error?.title ?? 'Не удалось выполнить запрос. Повторите попытку.');
+      }
+      throw error;
+    }
   }
 }
