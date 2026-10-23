@@ -1,0 +1,8 @@
+header { border-bottom: 1px solid var(--line); }
+.header-content { max-width: var(--content-width); margin: auto; padding: 0 var(--space-5); display: flex; align-items: center; gap: var(--space-7); height: 68px; }
+.brand { color: var(--ink); text-decoration: none; font-size: 24px; font-weight: 700; }
+nav { display: flex; height: 100%; gap: var(--space-5); }
+nav a { display: flex; align-items: center; padding: 0 var(--space-2); color: var(--ink); text-decoration: none; border-bottom: 2px solid transparent; }
+nav a.active { color: var(--accent); border-color: var(--accent); font-weight: 600; }
+.header-content span { margin-left: auto; font-size: var(--text-small); }
+main { max-width: var(--content-width); padding: var(--space-7) var(--space-5); margin: auto; }

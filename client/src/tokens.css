@@ -1,0 +1,24 @@
+:root {
+  --paper: #ffffff;
+  --ink: #20263d;
+  --muted: #69758b;
+  --line: #dce2eb;
+  --wash: #f6f8fb;
+  --accent: #245ea8;
+  --accent-hover: #194b8b;
+  --positive: #238044;
+  --negative: #b42336;
+  --radius: 6px;
+  --font: 'Segoe UI', Arial, sans-serif;
+  --text-small: 14px;
+  --text-body: 16px;
+  --text-title: 36px;
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 24px;
+  --space-6: 32px;
+  --space-7: 40px;
+  --content-width: 1200px;
+}

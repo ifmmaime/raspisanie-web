@@ -1,0 +1,10 @@
+<div class="page-heading"><div><h1>Импорт расписания</h1><p class="muted">Загрузка занятий из HTML-файла</p></div></div>
+<div class="form">
+  <p>Выберите сохранённое расписание в формате прежнего приложения. Занятия добавятся к существующим с отметкой «Не отмечено».</p>
+  <p><a href="/schedule-example.html" download>Скачать пример HTML</a></p>
+  <label>Файл расписания<input type="file" accept=".html,.htm,text/html" (change)="choose($event)" [disabled]="busy()"></label>
+  <p class="muted">HTML, до 1 МБ. Повторный импорт добавляет занятия повторно.</p>
+  @if (error()) { <p class="message error" role="alert">{{ error() }}</p> }
+  @if (message()) { <p class="message" role="status">{{ message() }}</p> }
+  <div><button class="primary" [disabled]="!file() || busy()" (click)="import()">{{ busy() ? 'Импорт…' : 'Импортировать' }}</button></div>
+</div>

@@ -1,0 +1,10 @@
+<div class="page-heading"><div><h1>Статистика</h1><p class="muted">Посещаемость по предметам</p></div></div>
+@if (error()) { <p class="message error" role="alert">{{ error() }}</p> }
+@if (data(); as stats) {
+  <p class="summary">Всего занятий: <strong>{{ stats.total }}</strong>. Был: {{ stats.attended }}. Не был: {{ stats.absent }}. Без отметки: {{ stats.unmarked }}. Посещаемость: <strong>{{ stats.percentage }}%</strong>.</p>
+  <p class="muted">Процент считается только по занятиям с отметкой: был / (был + не был) × 100.</p>
+  <div class="table-wrap"><table><thead><tr><th>Предмет</th><th>Всего</th><th>Был</th><th>Не был</th><th>Посещаемость</th></tr></thead><tbody>
+    @for (subject of stats.subjects; track subject.subject) { <tr><td>{{ subject.subject }}</td><td>{{ subject.total }}</td><td>{{ subject.attended }}</td><td>{{ subject.absent }}</td><td>{{ subject.percentage }}%</td></tr> }
+    @empty { <tr><td colspan="5" class="empty">Добавьте занятия, чтобы увидеть статистику.</td></tr> }
+  </tbody></table></div>
+} @else if (!error()) { <p role="status">Загрузка статистики…</p> }
