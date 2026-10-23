@@ -1,0 +1,15 @@
+<div class="page-heading"><div><h1>{{ id ? 'Изменить занятие' : 'Добавить занятие' }}</h1><p class="muted">Данные занятия в расписании</p></div></div>
+@if (error()) { <p class="message error" role="alert">{{ error() }}</p> }
+@if (ready()) {
+  <form class="form" #form="ngForm" (ngSubmit)="save()">
+    <label>Предмет<input name="subject" required maxlength="100" [(ngModel)]="details.subject"></label>
+    <div class="form-row">
+      <label>Дата<input type="date" name="date" required [(ngModel)]="details.date"></label>
+      <label>Начало<input type="time" name="start" required [(ngModel)]="details.startTime"></label>
+      <label>Окончание<input type="time" name="end" required [(ngModel)]="details.endTime"></label>
+    </div>
+    <label>Преподаватель<input name="teacher" required maxlength="100" [(ngModel)]="details.teacher"></label>
+    <label>Аудитория<input name="room" required maxlength="30" [(ngModel)]="details.room"></label>
+    <div class="form-actions"><button class="primary" type="submit" [disabled]="form.invalid || busy()">{{ busy() ? 'Сохранение…' : 'Сохранить' }}</button><a class="button" routerLink="/lessons">Отмена</a></div>
+  </form>
+} @else if (!error()) { <p role="status">Загрузка занятия…</p> }

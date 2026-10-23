@@ -1,0 +1,45 @@
+<div class="page-heading">
+  <div><h1>Занятия</h1><p class="muted">Расписание и отметки посещения</p></div>
+  <a class="button primary" routerLink="/lessons/new">Добавить занятие</a>
+</div>
+<form class="toolbar" (ngSubmit)="load()">
+  <label>Дата<input type="date" name="date" [(ngModel)]="query.date"></label>
+  <label class="search">Предмет<input type="search" name="search" maxlength="100" placeholder="Поиск по предмету" [(ngModel)]="query.search"></label>
+  <label>Посещение<select name="attendance" [(ngModel)]="query.attendance">
+    <option value="">Все отметки</option><option value="present">Был</option><option value="absent">Не был</option><option value="unmarked">Не отмечено</option>
+  </select></label>
+  <button type="submit" [disabled]="loading()">Найти</button>
+  <button type="button" (click)="query.date = ''; query.search = ''; query.attendance = ''; load()">Сбросить</button>
+</form>
+@if (error()) { <p class="message error" role="alert">{{ error() }}</p> }
+@if (loading()) { <p role="status" class="muted">Загрузка занятий…</p> }
+<div class="table-wrap" [attr.aria-busy]="loading()">
+  <table>
+    <thead><tr><th>Дата</th><th>Время</th><th>Предмет</th><th>Преподаватель</th><th>Аудитория</th><th>Посещение</th><th><span class="muted">Действия</span></th></tr></thead>
+    <tbody>
+      @for (lesson of result().items; track lesson) {
+        <tr>
+          <td>{{ lesson.date | date:'dd.MM.yyyy' }}</td>
+          <td class="time">{{ lesson.startTime }} – {{ lesson.endTime }}</td>
+          <td>{{ lesson.subject }}</td><td>{{ lesson.teacher }}</td><td>{{ lesson.room }}</td>
+          <td><select [class]="status(lesson)" [attr.aria-label]="'Посещение: ' + lesson.subject" [ngModel]="status(lesson)" (ngModelChange)="mark(lesson, $event)" [disabled]="pendingId() !== null">
+            <option value="unmarked">Не отмечено</option><option value="present">Был</option><option value="absent">Не был</option>
+          </select></td>
+          <td class="actions">
+            @if (deleteId() === lesson.id) {
+              <span>Удалить?</span><button class="link" [disabled]="pendingId() !== null" (click)="remove(lesson.id)">Да</button><button class="link" (click)="deleteId.set(null)">Отмена</button>
+            } @else {
+              <a [routerLink]="['/lessons', lesson.id, 'edit']">Изменить</a><button class="link" (click)="deleteId.set(lesson.id)">Удалить</button>
+            }
+          </td>
+        </tr>
+      } @empty {
+        @if (!loading()) { <tr><td colspan="7" class="empty">Занятий не найдено. Измените фильтры, добавьте занятие или импортируйте расписание.</td></tr> }
+      }
+    </tbody>
+  </table>
+</div>
+<div class="pagination">
+  <span>Показано {{ result().items.length }} из {{ result().total }}</span>
+  <div><button [disabled]="loading() || result().page === 1" (click)="load(result().page - 1)">Назад</button><span>{{ result().page }}</span><button [disabled]="loading() || result().page * result().pageSize >= result().total" (click)="load(result().page + 1)">Вперёд</button></div>
+</div>
