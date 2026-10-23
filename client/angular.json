@@ -26,7 +26,7 @@
         },
         "serve": {
           "builder": "@angular/build:dev-server",
-          "options": { "buildTarget": "raspisanie:build:development" }
+          "options": { "buildTarget": "raspisanie:build:development", "proxyConfig": "proxy.conf.json" }
         }
       }
     }

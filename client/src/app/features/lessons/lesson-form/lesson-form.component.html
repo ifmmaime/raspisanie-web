@@ -1,6 +1,7 @@
 <div class="page-heading"><div><h1>{{ id ? 'Изменить занятие' : 'Добавить занятие' }}</h1><p class="muted">Данные занятия в расписании</p></div></div>
 @if (error()) { <p class="message error" role="alert">{{ error() }}</p> }
 @if (ready()) {
+  <!-- ngModel связывает поля с details; ngSubmit вызывает метод компонента. -->
   <form class="form" #form="ngForm" (ngSubmit)="save()">
     <label>Предмет<input name="subject" required maxlength="100" [(ngModel)]="details.subject"></label>
     <div class="form-row">
